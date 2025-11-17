@@ -7,6 +7,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 
+interface Episode {
+  id: number;
+  number: number;
+  title: string;
+  duration: string;
+  thumbnail: string;
+  videoUrl: string;
+}
+
 interface Anime {
   id: number;
   title: string;
@@ -17,6 +26,7 @@ interface Anime {
   genre: string;
   status: 'watching' | 'planned' | 'completed';
   reviews: Review[];
+  episodeList: Episode[];
 }
 
 interface Review {
@@ -32,6 +42,8 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedAnime, setSelectedAnime] = useState<Anime | null>(null);
   const [newReview, setNewReview] = useState({ rating: 5, text: '' });
+  const [isPlayerOpen, setIsPlayerOpen] = useState(false);
+  const [currentEpisode, setCurrentEpisode] = useState<Episode | null>(null);
 
   const [animeList, setAnimeList] = useState<Anime[]>([
     {
@@ -46,6 +58,11 @@ const Index = () => {
       reviews: [
         { id: 1, user: 'Александр', rating: 5, text: 'Потрясающий сюжет и отличная анимация!', date: '2024-01-15' },
         { id: 2, user: 'Мария', rating: 4, text: 'Интересная история, но местами затянуто.', date: '2024-01-10' }
+      ],
+      episodeList: [
+        { id: 1, number: 1, title: 'Начало путешествия', duration: '24:15', thumbnail: 'https://cdn.poehali.dev/projects/a314baa9-b207-42f5-b91a-c7404aebbed6/files/5695a5ae-5138-4462-a9e4-9bfe84fffcc7.jpg', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
+        { id: 2, number: 2, title: 'Темные силы', duration: '23:45', thumbnail: 'https://cdn.poehali.dev/projects/a314baa9-b207-42f5-b91a-c7404aebbed6/files/5695a5ae-5138-4462-a9e4-9bfe84fffcc7.jpg', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
+        { id: 3, number: 3, title: 'Пробуждение силы', duration: '24:30', thumbnail: 'https://cdn.poehali.dev/projects/a314baa9-b207-42f5-b91a-c7404aebbed6/files/5695a5ae-5138-4462-a9e4-9bfe84fffcc7.jpg', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' }
       ]
     },
     {
@@ -59,6 +76,10 @@ const Index = () => {
       status: 'completed',
       reviews: [
         { id: 3, user: 'Дмитрий', rating: 5, text: 'Очень душевное аниме, напоминает о школьных годах.', date: '2024-01-12' }
+      ],
+      episodeList: [
+        { id: 4, number: 1, title: 'Первый день', duration: '23:20', thumbnail: 'https://cdn.poehali.dev/projects/a314baa9-b207-42f5-b91a-c7404aebbed6/files/d68dac3d-b3bf-43c0-b7c9-4c85deb7a089.jpg', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' },
+        { id: 5, number: 2, title: 'Новые друзья', duration: '23:15', thumbnail: 'https://cdn.poehali.dev/projects/a314baa9-b207-42f5-b91a-c7404aebbed6/files/d68dac3d-b3bf-43c0-b7c9-4c85deb7a089.jpg', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' }
       ]
     },
     {
@@ -70,7 +91,8 @@ const Index = () => {
       rating: 4.9,
       genre: 'Экшен',
       status: 'planned',
-      reviews: []
+      reviews: [],
+      episodeList: []
     },
     {
       id: 4,
@@ -81,7 +103,8 @@ const Index = () => {
       rating: 4.6,
       genre: 'Триллер',
       status: 'watching',
-      reviews: []
+      reviews: [],
+      episodeList: []
     },
     {
       id: 5,
@@ -92,7 +115,8 @@ const Index = () => {
       rating: 4.3,
       genre: 'Романтика',
       status: 'planned',
-      reviews: []
+      reviews: [],
+      episodeList: []
     },
     {
       id: 6,
@@ -105,9 +129,33 @@ const Index = () => {
       status: 'completed',
       reviews: [
         { id: 4, user: 'Екатерина', rating: 5, text: 'Лучшее аниме этого сезона! Обязательно к просмотру.', date: '2024-01-08' }
+      ],
+      episodeList: [
+        { id: 6, number: 1, title: 'Легенда начинается', duration: '24:00', thumbnail: 'https://cdn.poehali.dev/projects/a314baa9-b207-42f5-b91a-c7404aebbed6/files/458fe90f-fad0-440c-9e41-9a13ef1910e4.jpg', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' }
       ]
     }
   ]);
+
+  const handlePlayEpisode = (episode: Episode) => {
+    setCurrentEpisode(episode);
+    setIsPlayerOpen(true);
+  };
+
+  const handleNextEpisode = () => {
+    if (!selectedAnime || !currentEpisode) return;
+    const currentIndex = selectedAnime.episodeList.findIndex(ep => ep.id === currentEpisode.id);
+    if (currentIndex < selectedAnime.episodeList.length - 1) {
+      setCurrentEpisode(selectedAnime.episodeList[currentIndex + 1]);
+    }
+  };
+
+  const handlePreviousEpisode = () => {
+    if (!selectedAnime || !currentEpisode) return;
+    const currentIndex = selectedAnime.episodeList.findIndex(ep => ep.id === currentEpisode.id);
+    if (currentIndex > 0) {
+      setCurrentEpisode(selectedAnime.episodeList[currentIndex - 1]);
+    }
+  });
 
   const categories = [
     { id: 'all', label: 'Все', count: animeList.length },
@@ -281,6 +329,48 @@ const Index = () => {
               </DialogHeader>
 
               <div className="space-y-4">
+                {selectedAnime.episodeList.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+                      <Icon name="PlayCircle" size={20} />
+                      Эпизоды ({selectedAnime.episodeList.length})
+                    </h3>
+                    <div className="grid gap-3">
+                      {selectedAnime.episodeList.map((episode) => (
+                        <Card
+                          key={episode.id}
+                          className="group cursor-pointer overflow-hidden border-border bg-secondary hover:bg-secondary/80 transition-all hover:border-primary"
+                          onClick={() => handlePlayEpisode(episode)}
+                        >
+                          <div className="flex gap-3 p-3">
+                            <div className="relative w-32 h-20 flex-shrink-0 rounded overflow-hidden">
+                              <img
+                                src={episode.thumbnail}
+                                alt={episode.title}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/60 transition-colors">
+                                <Icon name="Play" size={32} className="text-white" />
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <Badge variant="outline" className="mb-1">
+                                    Эпизод {episode.number}
+                                  </Badge>
+                                  <h4 className="font-semibold text-sm mb-1 truncate">{episode.title}</h4>
+                                  <p className="text-xs text-muted-foreground">{episode.duration}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     <Icon name="MessageSquare" size={20} />
@@ -329,6 +419,92 @@ const Index = () => {
                 </div>
               </div>
             </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isPlayerOpen} onOpenChange={setIsPlayerOpen}>
+        <DialogContent className="max-w-5xl max-h-[95vh] p-0 bg-black border-border">
+          {currentEpisode && (
+            <div className="relative">
+              <div className="aspect-video bg-black">
+                <video
+                  key={currentEpisode.videoUrl}
+                  controls
+                  autoPlay
+                  className="w-full h-full"
+                  controlsList="nodownload"
+                >
+                  <source src={currentEpisode.videoUrl} type="video/mp4" />
+                  Ваш браузер не поддерживает воспроизведение видео.
+                </video>
+              </div>
+              
+              <div className="bg-card p-4 space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <Badge variant="outline" className="mb-2">
+                      Эпизод {currentEpisode.number}
+                    </Badge>
+                    <h3 className="text-xl font-bold mb-1">{currentEpisode.title}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedAnime?.title} • {currentEpisode.duration}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handlePreviousEpisode}
+                    disabled={selectedAnime?.episodeList[0].id === currentEpisode.id}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    <Icon name="ChevronLeft" size={16} className="mr-2" />
+                    Предыдущий эпизод
+                  </Button>
+                  <Button
+                    onClick={handleNextEpisode}
+                    disabled={selectedAnime?.episodeList[selectedAnime.episodeList.length - 1].id === currentEpisode.id}
+                    className="flex-1 bg-primary hover:bg-primary/90"
+                  >
+                    Следующий эпизод
+                    <Icon name="ChevronRight" size={16} className="ml-2" />
+                  </Button>
+                </div>
+
+                {selectedAnime && selectedAnime.episodeList.length > 1 && (
+                  <div className="border-t border-border pt-3">
+                    <h4 className="text-sm font-semibold mb-2">Другие эпизоды</h4>
+                    <div className="grid gap-2 max-h-48 overflow-y-auto">
+                      {selectedAnime.episodeList.filter(ep => ep.id !== currentEpisode.id).map((episode) => (
+                        <div
+                          key={episode.id}
+                          onClick={() => setCurrentEpisode(episode)}
+                          className="flex gap-2 p-2 rounded hover:bg-secondary cursor-pointer transition-colors"
+                        >
+                          <div className="relative w-24 h-14 flex-shrink-0 rounded overflow-hidden">
+                            <img
+                              src={episode.thumbnail}
+                              alt={episode.title}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                              <Icon name="Play" size={20} className="text-white" />
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-muted-foreground">Эпизод {episode.number}</p>
+                            <p className="text-sm font-medium truncate">{episode.title}</p>
+                            <p className="text-xs text-muted-foreground">{episode.duration}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </DialogContent>
       </Dialog>
