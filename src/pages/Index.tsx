@@ -27,6 +27,8 @@ interface Anime {
   status: 'watching' | 'planned' | 'completed';
   reviews: Review[];
   episodeList: Episode[];
+  isFavorite: boolean;
+  currentEpisode: number;
 }
 
 interface Review {
@@ -44,6 +46,7 @@ const Index = () => {
   const [newReview, setNewReview] = useState({ rating: 5, text: '' });
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
   const [currentEpisode, setCurrentEpisode] = useState<Episode | null>(null);
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   const [animeList, setAnimeList] = useState<Anime[]>([
     {
@@ -63,7 +66,9 @@ const Index = () => {
         { id: 1, number: 1, title: 'Начало путешествия', duration: '24:15', thumbnail: 'https://cdn.poehali.dev/projects/a314baa9-b207-42f5-b91a-c7404aebbed6/files/5695a5ae-5138-4462-a9e4-9bfe84fffcc7.jpg', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
         { id: 2, number: 2, title: 'Темные силы', duration: '23:45', thumbnail: 'https://cdn.poehali.dev/projects/a314baa9-b207-42f5-b91a-c7404aebbed6/files/5695a5ae-5138-4462-a9e4-9bfe84fffcc7.jpg', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
         { id: 3, number: 3, title: 'Пробуждение силы', duration: '24:30', thumbnail: 'https://cdn.poehali.dev/projects/a314baa9-b207-42f5-b91a-c7404aebbed6/files/5695a5ae-5138-4462-a9e4-9bfe84fffcc7.jpg', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' }
-      ]
+      ],
+      isFavorite: true,
+      currentEpisode: 1
     },
     {
       id: 2,
@@ -80,7 +85,9 @@ const Index = () => {
       episodeList: [
         { id: 4, number: 1, title: 'Первый день', duration: '23:20', thumbnail: 'https://cdn.poehali.dev/projects/a314baa9-b207-42f5-b91a-c7404aebbed6/files/d68dac3d-b3bf-43c0-b7c9-4c85deb7a089.jpg', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' },
         { id: 5, number: 2, title: 'Новые друзья', duration: '23:15', thumbnail: 'https://cdn.poehali.dev/projects/a314baa9-b207-42f5-b91a-c7404aebbed6/files/d68dac3d-b3bf-43c0-b7c9-4c85deb7a089.jpg', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' }
-      ]
+      ],
+      isFavorite: false,
+      currentEpisode: 12
     },
     {
       id: 3,
@@ -92,7 +99,9 @@ const Index = () => {
       genre: 'Экшен',
       status: 'planned',
       reviews: [],
-      episodeList: []
+      episodeList: [],
+      isFavorite: false,
+      currentEpisode: 0
     },
     {
       id: 4,
@@ -104,7 +113,9 @@ const Index = () => {
       genre: 'Триллер',
       status: 'watching',
       reviews: [],
-      episodeList: []
+      episodeList: [],
+      isFavorite: true,
+      currentEpisode: 5
     },
     {
       id: 5,
@@ -116,7 +127,9 @@ const Index = () => {
       genre: 'Романтика',
       status: 'planned',
       reviews: [],
-      episodeList: []
+      episodeList: [],
+      isFavorite: false,
+      currentEpisode: 0
     },
     {
       id: 6,
@@ -132,13 +145,34 @@ const Index = () => {
       ],
       episodeList: [
         { id: 6, number: 1, title: 'Легенда начинается', duration: '24:00', thumbnail: 'https://cdn.poehali.dev/projects/a314baa9-b207-42f5-b91a-c7404aebbed6/files/458fe90f-fad0-440c-9e41-9a13ef1910e4.jpg', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' }
-      ]
+      ],
+      isFavorite: false,
+      currentEpisode: 24
     }
   ]);
+
+  const toggleFavorite = (animeId: number) => {
+    setAnimeList(animeList.map(anime => 
+      anime.id === animeId ? { ...anime, isFavorite: !anime.isFavorite } : anime
+    ));
+  };
+
+  const updateProgress = (animeId: number, episodeNumber: number) => {
+    setAnimeList(animeList.map(anime => {
+      if (anime.id === animeId) {
+        const newProgress = `${episodeNumber} / ${anime.episodes}`;
+        return { ...anime, currentEpisode: episodeNumber, progress: newProgress };
+      }
+      return anime;
+    }));
+  };
 
   const handlePlayEpisode = (episode: Episode) => {
     setCurrentEpisode(episode);
     setIsPlayerOpen(true);
+    if (selectedAnime) {
+      updateProgress(selectedAnime.id, episode.number);
+    }
   };
 
   const handleNextEpisode = () => {
@@ -155,7 +189,7 @@ const Index = () => {
     if (currentIndex > 0) {
       setCurrentEpisode(selectedAnime.episodeList[currentIndex - 1]);
     }
-  });
+  };
 
   const categories = [
     { id: 'all', label: 'Все', count: animeList.length },
@@ -167,7 +201,8 @@ const Index = () => {
   const filteredAnime = animeList.filter(anime => {
     const matchesSearch = anime.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || anime.status === selectedCategory;
-    return matchesSearch && matchesCategory;
+    const matchesFavorites = !showFavoritesOnly || anime.isFavorite;
+    return matchesSearch && matchesCategory && matchesFavorites;
   });
 
   const handleAddReview = () => {
@@ -215,6 +250,14 @@ const Index = () => {
           <div className="flex items-center justify-between gap-4 mb-4">
             <h1 className="text-2xl font-bold text-primary">АнимеПортал</h1>
             <div className="flex gap-2">
+              <Button 
+                variant={showFavoritesOnly ? "default" : "ghost"} 
+                size="icon"
+                onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                className={showFavoritesOnly ? "bg-primary" : ""}
+              >
+                <Icon name="Heart" size={20} className={showFavoritesOnly ? "fill-current" : ""} />
+              </Button>
               <Button variant="ghost" size="icon">
                 <Icon name="User" size={20} />
               </Button>
@@ -271,6 +314,19 @@ const Index = () => {
                   alt={anime.title}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                 />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite(anime.id);
+                  }}
+                  className="absolute top-2 right-2 z-10 p-2 rounded-full bg-black/50 hover:bg-black/70 transition-colors"
+                >
+                  <Icon 
+                    name="Heart" 
+                    size={18} 
+                    className={anime.isFavorite ? "fill-primary text-primary" : "text-white"} 
+                  />
+                </button>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-3">
                   <div className="flex items-center gap-1 mb-1">
@@ -311,7 +367,20 @@ const Index = () => {
                     className="w-32 h-48 object-cover rounded-lg"
                   />
                   <div className="flex-1">
-                    <DialogTitle className="text-2xl mb-2">{selectedAnime.title}</DialogTitle>
+                    <div className="flex items-start justify-between mb-2">
+                      <DialogTitle className="text-2xl">{selectedAnime.title}</DialogTitle>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleFavorite(selectedAnime.id)}
+                      >
+                        <Icon 
+                          name="Heart" 
+                          size={24} 
+                          className={selectedAnime.isFavorite ? "fill-primary text-primary" : ""} 
+                        />
+                      </Button>
+                    </div>
                     <DialogDescription className="space-y-2">
                       <div className="flex items-center gap-2">
                         {renderStars(selectedAnime.rating)}
